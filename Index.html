@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asteroids</title>
+</head>
+<body>
+    <script>
+        let ship;
+        let asteroids = [];
+        let bullets = [];
+        let score = 0;
+
+        function setup() {
+            createCanvas(800, 600);
+            ship = new Ship();
+            for (let i = 0; i < 10; i++) {
+                asteroids.push(new Asteroid());
+            }
+        }
+
+        function draw() {
+            background(0);
+
+            ship.update();
+            ship.render();
+
+            for (let i = 0; i < asteroids.length; i++) {
+                asteroids[i].update();
+                asteroids[i].render();
+
+                if (ship.collides(asteroids[i])) {
+                    gameOver();
+                }
+            }
+
+            for (let i = 0; i < bullets.length; i++) {
+                bullets[i].update();
+                bullets[i].render();
+
+                for (let j = 0; j < asteroids.length; j++) {
+                    if (bullets[i].collides(asteroids[j])) {
+                        score++;
+                        asteroids.splice(j, 1);
+                        bullets.splice(i, 1);
+                        break;
+                    }
+                }
+            }
+
+            textSize(32);
+            fill(255);
+            text(`Score: ${score}`, 10, 30);
+        }
+
+        function keyPressed() {
+            if (key === ' ') {
+                bullets.push(new Bullet(ship.position, ship.angle));
+            }
+            if (key === 'W') {
+                ship.thrust(true);
+            } else if (key === 'S') {
+                ship.thrust(false);
+            }
+            if (key === 'A') {
+                ship.rotate(false);
+            } else if (key === 'D') {
+                ship.rotate(true);
+            }
+        }
+
+        function keyReleased() {
+            if (key === 'W') {
+                ship.thrust(false);
+            }
+        }
+
+        function gameOver() {
+            noLoop();
+            fill(255);
+            textSize(64);
+            textAlign(CENTER);
+            text('Game Over', width / 2, height / 2);
+        }
+
+        class Ship {
+            constructor() {
+                this.position = createVector(width / 2, height / 2);
+                this.velocity = createVector(0, 0);
+                this.angle = 0;
+                this.thrusting = false;
+            }
+
+            update() {
+                if (this.thrusting) {
+                    this.velocity.add(p5.Vector.fromAngle(this.angle).mult(0.1));
+                }
+                this.velocity.limit(3);
+                this.position.add(this.velocity);
+
+                if (this.position.x > width + radius) {
+                    this.position.x = -radius;
+                } else if (this.position.x < -radius) {
+                    this.position.x = width + radius;
+                }
+
+                if (this.position.y > height + radius) {
+                    this.position.y = -radius;
+                } else if (this.position.y < -radius) {
+                    this.position.y = height + radius;
+                }
+            }
+
+            render() {
+                push();
+                translate(this.position.x, this.position.y);
+                rotate(this.angle);
+                triangle(-radius, 0, radius, 0, 0, radius * 2);
+                if (this.thrusting) {
+                    push();
+                    translate(0, radius);
+                    fill(255, 127, 0);
+                    triangle(0, -radius * 0.5, radius * 0.5, radius * 0.5, -radius * 0.5, radius * 0.5);
+                    pop();
+                }
+                pop();
+            }
+
+            thrust(thrusting) {
+                this.thrusting = thrusting;
